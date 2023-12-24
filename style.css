@@ -38,7 +38,11 @@ body {
     border-radius: 4px;
     box-sizing: border-box;
 }
-
+.registration-container input[type="radio"]{
+    width: 10%;
+    padding: 8px;
+    display: inline;
+}
 .registration-container button {
     width: 100%;
     padding: 10px;
