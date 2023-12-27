@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <div class="admin-container">
+        <h2>Admin Dashboard</h2>
+        <button type="button" onclick="downloadData()">Download Data as PDF</button>
+
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Gender</th>
+                    <th>Address</th>
+                    <th>Phone Number</th>
+                    <th>Date of Birth</th>
+                    <th>Region</th>
+                    <th>Children</th>
+                    <th>Above 21</th>
+                    <th>Below 21</th>
+                </tr>
+            </thead>
+            <tbody id="dashboardTableBody">
+                <!-- Data will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.debug.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6dyamLUbdpDKhPyocO4c8UZDeprFHnqo",
+            authDomain: "census-cam.firebaseapp.com",
+            projectId: "census-cam",
+            storageBucket: "census-cam.appspot.com",
+            messagingSenderId: "533729581158",
+            appId: "1:533729581158:web:eaba16713d8ba8574975a7"
+        };
+    
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+    
+        // Function to download data as PDF
+        window.downloadData = async function () {
+            const pdf = new jsPDF();
+            pdf.text('User Registration Data', 20, 10);
+
+            const registrationsRef = collection(db, 'registrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
+
+            let yOffset = 20;
+            const lineHeight = 10;
+
+            registrations.forEach(user => {
+                const userData = `Name: ${user.fullName}, Gender: ${user.gender}, Address: ${user.address}, Phone Number: ${user.phoneNumber}, Region: ${user.region}, Children: ${user.hasChildren ? 'Yes' : 'No'}`;
+                
+                // Check if there is enough space on the page for the text
+                if (yOffset + lineHeight * 2 > pdf.internal.pageSize.height) {
+                    pdf.addPage();
+                    yOffset = 20;
+                }
+
+                pdf.text(userData, 20, yOffset);
+                yOffset += lineHeight;
+            });
+
+            pdf.save('registration_data.pdf');
+        }
+
+    
+        // Display user registration data on the admin dashboard
+        async function displayUserRegistrationData() {
+            const registrationsRef = collection(db, 'registrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
+    
+            const tableBody = document.getElementById('dashboardTableBody');
+            registrations.forEach(user => {
+                const row = `<tr>
+                    <td>${user.fullName}</td>
+                    <td>${user.gender}</td>
+                    <td>${user.address}</td>
+                    <td>${user.phoneNumber}</td>
+                    <td>${user.dob}</td>
+                    <td>${user.region}</td>
+                    <td>${user.hasChildren ? 'Yes' : 'No'}</td>
+                    <td>${user.above21 || '-'}</td>
+                    <td>${user.below21 || '-'}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+        
+        displayUserRegistrationData();
+    </script>
+    
+</body>
+</html>
