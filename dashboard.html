@@ -1,40 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./style.css">
     <title>Admin Dashboard</title>
 </head>
+
 <body>
     <div class="admin-container">
         <h2>Admin Dashboard</h2>
+        <div>
+            <label for="regionFilter">Filter by Region:</label>
+            <select id="regionFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="North">North</option>
+                <option value="South">South</option>
+                <option value="East">East</option>
+                <option value="Littoral">Littoral</option>
+            </select>
+        </div>
+        <div>
+            <label for="genderFilter">Filter by Gender:</label>
+            <select id="genderFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
         <button type="button" onclick="downloadData()">Download Data as PDF</button>
 
+        <!-- Table for Personal Data -->
+        <h3 class="personna">Personal Data</h3>
         <table border="1">
             <thead>
                 <tr>
                     <th>Full Name</th>
                     <th>Gender</th>
-                    <th>Address</th>
-                    <th>Phone Number</th>
                     <th>Date of Birth</th>
-                    <th>Region</th>
+                    <th>Phone Number</th>
                     <th>Children</th>
                     <th>Above 21</th>
                     <th>Below 21</th>
                 </tr>
             </thead>
-            <tbody id="dashboardTableBody">
+            <tbody id="personalDataTableBody">
                 <!-- Data will be dynamically added here -->
             </tbody>
         </table>
+
+        
+        <div class="statistics-container">
+            <h3>Demographic Data Statistics</h3>
+            <canvas id="demographicChart" width="200" height="200"></canvas>
+            <div id="demographicStatistics"></div>
+            <div class="statistics-details">
+                <p id="northCount">North: 0</p>
+                <p id="southCount">South: 0</p>
+                <p id="eastCount">East: 0</p>
+                <p id="littoralCount">Littoral: 0</p>
+            </div>
+        </div>
+        
+        <div class="statistics-container">
+            <h3>Employment Statistics</h3>
+            <canvas id="employmentChart" width="200" height="200"></canvas>
+            <div id="employmentStatistics"></div>
+            <div class="statistics-details">
+                <p id="employedCount">Employed: 0</p>
+                <p id="unemployedCount">Unemployed: 0</p>
+                <p id="self-EmployedCount">Self-Employed: 0</p>
+            </div>
+        </div>
+        
+        <div class="statistics-container" width="200" height="200">
+            <h3>Education Statistics</h3>
+            <div id="educationStatistics"></div>
+            <canvas id="educationChart"></canvas>
+            <div class="statistics-details">
+                <p id="highschoolCount">High School: 0</p>
+                <p id="universityCount">University: 0</p>
+                <p id="postgraduateCount">Postgraduate: 0</p>
+            </div>
+        </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.debug.js"></script>
+    <!-- Replace version with the latest version available -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        
+
     
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -52,58 +114,250 @@
     
         // Function to download data as PDF
         window.downloadData = async function () {
-            const pdf = new jsPDF();
-            pdf.text('User Registration Data', 20, 10);
+            const { jsPDF } = window.jspdf;
+            // const pdf = new window.jspdf.jsPDF();
 
+            // Add personal data to PDF
+            pdf.text('Personal Data', 10, 10);
+            pdf.autoTable({
+                head: [['Full Name', 'Gender', 'Date of Birth', 'Phone Number', 'Children', 'Above 21', 'Below 21']],
+                body: tableToArray('personalDataTableBody'),
+            });
+
+            // Add demographic statistics to PDF
+            pdf.text('Demographic Data Statistics', 10, pdf.autoTable.previous.finalY + 10);
+            pdf.autoTable({
+                body: [['North', 'South', 'East', 'Littoral'], [statistics['North'], statistics['South'], statistics['East'], statistics['Littoral']]],
+            });
+
+            // Add employment statistics to PDF
+            pdf.text('Employment Statistics', 10, pdf.autoTable.previous.finalY + 10);
+            pdf.autoTable({
+                body: [['Employed', 'Unemployed', 'Self-Employed'], [statistics['Employed'], statistics['Unemployed'], statistics['Self-Employed']]],
+            });
+
+            // Add education statistics to PDF
+            pdf.text('Education Statistics', 10, pdf.autoTable.previous.finalY + 10);
+            pdf.autoTable({
+                body: [['High School', 'University', 'Postgraduate'], [statistics['High School'], statistics['University'], statistics['Postgraduate']]],
+            });
+
+            // Save the PDF
+            pdf.save('dashboard_data.pdf');
+        };
+
+        // Helper function to convert table to array
+        function tableToArray(tableId) {
+            const table = document.getElementById(tableId);
+            const rows = Array.from(table.rows);
+            return rows.map(row => Array.from(row.cells).map(cell => cell.textContent));
+        }
+
+        // Function to apply filters and update the displayed data
+        window.applyFilters = function () {
+            // Apply filters for each form as needed
+            displayPersonalData();
+        };
+    
+        // Display Personal Data on the admin dashboard
+        async function displayPersonalData() {
+            const tableBody = document.getElementById('personalDataTableBody');
+            tableBody.innerHTML = '';
+    
+            const regionFilter = document.getElementById('regionFilter').value;
+            const genderFilter = document.getElementById('genderFilter').value;
+    
             const registrationsRef = collection(db, 'registrations');
             const registrationsSnapshot = await getDocs(registrationsRef);
             const registrations = registrationsSnapshot.docs.map(doc => doc.data());
-
-            let yOffset = 20;
-            const lineHeight = 10;
-
+    
             registrations.forEach(user => {
-                const userData = `Name: ${user.fullName}, Gender: ${user.gender}, Address: ${user.address}, Phone Number: ${user.phoneNumber}, Region: ${user.region}, Children: ${user.hasChildren ? 'Yes' : 'No'}`;
-                
-                // Check if there is enough space on the page for the text
-                if (yOffset + lineHeight * 2 > pdf.internal.pageSize.height) {
-                    pdf.addPage();
-                    yOffset = 20;
+                if (
+                    (regionFilter === '' || user.region === regionFilter) &&
+                    (genderFilter === '' || user.gender === genderFilter)
+                ) {
+                    const row = `<tr>
+                        <td>${user.fullName}</td>
+                        <td>${user.gender}</td>
+                        <td>${user.dob}</td>
+                        <td>${user.phoneNumber}</td>
+                        <td>${user.hasChildren ? 'Yes' : 'No'}</td>
+                        <td>${user.above21 || '-'}</td>
+                        <td>${user.below21 || '-'}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
                 }
-
-                pdf.text(userData, 20, yOffset);
-                yOffset += lineHeight;
-            });
-
-            pdf.save('registration_data.pdf');
-        }
-
-    
-        // Display user registration data on the admin dashboard
-        async function displayUserRegistrationData() {
-            const registrationsRef = collection(db, 'registrations');
-            const registrationsSnapshot = await getDocs(registrationsRef);
-            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
-    
-            const tableBody = document.getElementById('dashboardTableBody');
-            registrations.forEach(user => {
-                const row = `<tr>
-                    <td>${user.fullName}</td>
-                    <td>${user.gender}</td>
-                    <td>${user.address}</td>
-                    <td>${user.phoneNumber}</td>
-                    <td>${user.dob}</td>
-                    <td>${user.region}</td>
-                    <td>${user.hasChildren ? 'Yes' : 'No'}</td>
-                    <td>${user.above21 || '-'}</td>
-                    <td>${user.below21 || '-'}</td>
-                </tr>`;
-                tableBody.innerHTML += row;
             });
         }
-        
-        displayUserRegistrationData();
+    
+        // Download Personal Data as PDF
+        async function downloadPersonalData() {
+            
+        }
+    
+       // ...
+
+        // Function to create a chart
+        function createChart(chartId, data, labels, chartType, title) {
+            const ctx = document.getElementById(chartId).getContext('2d');
+            new Chart(ctx, {
+                type: chartType,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: title,
+                        data: data,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // ...
+
+        // Function to display demographic statistics
+        async function displayDemographicStatistics() {
+            const demoRef = collection(db, 'demos');
+            const demoSnapshot = await getDocs(demoRef);
+            const demoData = demoSnapshot.docs.map(doc => doc.data());
+
+            const statistics = {
+                'North': 0,
+                'South': 0,
+                'East': 0,
+                'Littoral': 0
+            };
+
+            demoData.forEach(data => {
+                statistics[data.region]++;
+            });
+
+            // Display demographic statistics on the admin dashboard
+            const demographicStatisticsDiv = document.getElementById('demographicStatistics');
+            demographicStatisticsDiv.innerHTML = '<p>Demographic Statistics:</p>';
+
+            for (const region in statistics) {
+                demographicStatisticsDiv.innerHTML += `<p>${region}: ${statistics[region]}</p>`;
+            }
+
+            // Update the counts in the HTML
+            document.getElementById('northCount').textContent = `North: ${statistics['North']}`;
+            document.getElementById('southCount').textContent = `South: ${statistics['South']}`;
+            document.getElementById('eastCount').textContent = `East: ${statistics['East']}`;
+            document.getElementById('littoralCount').textContent = `Littoral: ${statistics['Littoral']}`;
+
+            // Create and update the demographic chart
+            const demoChartLabels = Object.keys(statistics);
+            const demoChartData = Object.values(statistics);
+            createChart('demographicChart', demoChartData, demoChartLabels, 'bar', 'Demographic Statistics');
+        }
+
+
+        // Function to display employment statistics
+        async function displayEmploymentStatistics() {
+            const employmentRef = collection(db, 'employments');
+            const employmentSnapshot = await getDocs(employmentRef);
+            const employmentData = employmentSnapshot.docs.map(doc => doc.data());
+
+            const statistics = {
+                'Employed': 0,
+                'Unemployed': 0,
+                'Self-Employed': 0
+            };
+
+            employmentData.forEach(data => {
+                statistics[data.status]++;
+            });
+
+            // Display employment statistics on the admin dashboard
+            const employmentStatisticsDiv = document.getElementById('employmentStatistics');
+            employmentStatisticsDiv.innerHTML = '<p>Employment Statistics:</p>';
+
+            for (const status in statistics) {
+                employmentStatisticsDiv.innerHTML += `<p>${status}: ${statistics[status]}</p>`;
+            }
+
+            // Update the counts in the HTML
+            document.getElementById('employedCount').textContent = `Employed: ${statistics['Employed']}`;
+            document.getElementById('unemployedCount').textContent = `Unemployed: ${statistics['Unemployed']}`;
+            document.getElementById('self-EmployedCount').textContent = `Self-Employed: ${statistics['Self-Employed']}`;
+
+            // Create and update the employment chart
+            const employmentChartLabels = Object.keys(statistics);
+            const employmentChartData = Object.values(statistics);
+            createChart('employmentChart', employmentChartData, employmentChartLabels, 'pie', 'Employment Statistics');
+        }
+
+        // ...
+
+        // Function to display education statistics
+        async function displayEducationStatistics() {
+            const educationRef = collection(db, 'educations');
+            const educationSnapshot = await getDocs(educationRef);
+            const educationData = educationSnapshot.docs.map(doc => doc.data());
+
+            const statistics = {
+                'High School': 0,
+                'University': 0,
+                'Postgraduate': 0
+            };
+
+            educationData.forEach(data => {
+                statistics[data.attainment]++;
+            });
+
+            // Display education statistics on the admin dashboard
+            const educationStatisticsDiv = document.getElementById('educationStatistics');
+            educationStatisticsDiv.innerHTML = '<p>Education Statistics:</p>';
+
+            for (const attainment in statistics) {
+                educationStatisticsDiv.innerHTML += `<p>${attainment}: ${statistics[attainment]}</p>`;
+            }
+
+            // Update the counts in the HTML
+            document.getElementById('highschoolCount').textContent = `High School: ${statistics['High School']}`;
+            document.getElementById('universityCount').textContent = `University: ${statistics['University']}`;
+            document.getElementById('postgraduateCount').textContent = `Postgraduate: ${statistics['Postgraduate']}`;
+
+            // Create and update the education chart
+            const educationChartLabels = Object.keys(statistics);
+            const educationChartData = Object.values(statistics);
+            createChart('educationChart', educationChartData, educationChartLabels, 'doughnut', 'Education Statistics');
+        }
+
+        applyFilters();
+        displayDemographicStatistics();
+        displayEmploymentStatistics();
+        displayEducationStatistics();
+
+        // Display statistics
+        // displayDemographicStatistics();
+        // displayEmploymentStatistics();
+        // displayEducationStatistics();
+
+
+
     </script>
     
 </body>
+
 </html>

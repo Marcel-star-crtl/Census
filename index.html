@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -102,6 +102,269 @@
 
             alert("Your information has been submitted successfully! Document ID: " + docRef.id);
         };
+    </script>
+    
+</body>
+</html> -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Registration Page</title>
+</head>
+<body>
+    <div class="registration-container" id="step1">
+        <h2>Personal Data</h2>
+        <form action="javascript:void(0);" id="registration-form">
+            <label for="full-names">Name:</label>
+            <input type="text" id="full-names" name="full-names" required>
+            <label for="gender">Gender:</label>
+            <select id="gender" name="gender" required>
+                <option value="" disabled selected hidden>Click to select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+            <label for="dob">Date of Birth (DOB):</label>
+            <input type="date" id="dob" name="dob" required>
+            <label for="phone-number">Contact:</label>
+            <input type="tel" id="phone-number" name="phone-number" required pattern="[0-9]{10}">
+            <label for="children">Do you have children?</label>
+            <select id="children" name="children" onchange="toggleFields()">
+                <option value="" disabled selected hidden>Click to select </option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+            </select>
+            <div id="childFields" style="display: none;">
+                <label for="above21">Number of children above 21:</label>
+                <input type="number" id="above21" name="above21">
+
+                <label for="below21">Number of children below 21:</label>
+                <input type="number" id="below21" name="below21">
+            </div>
+        </form>
+        <button type="button" onclick="showStep(2); submitRegistration();">Next</button>
+        <div class="admin-link-container">
+            <a href="dashboard.html">Are you an Admin?</a>
+        </div>
+    </div>
+
+    <div class="registration-container" id="step2" style="display: none;">
+        <h2>Demorgraphic Data</h2>
+        <form action="javascript:void(0);" id="demographic-form">
+            <label for="nationality">Nationality:</label>
+            <input type="text" id="nationality" name="full-names" required>
+
+            <label for="language">Language:</label>
+            <select name="language" id="language">
+                <option value="English">English</option>
+                <option value="French">French</option>
+            </select>
+
+            <label for="region">Region:</label>
+            <select id="region" name="region" required>
+                <option value="" disabled selected hidden>Click to select your region of birth</option>
+                <option value="Adamawa">Adamawa</option>
+                <option value="Centre">Centre</option>
+                <option value="East">East</option>
+                <option value="Far North">Far North</option>
+                <option value="Littoral">Littoral</option>
+                <option value="North">North</option>
+                <option value="Northwest">Northwest</option>
+                <option value="South">South</option>
+                <option value="Southwest">Southwest</option>
+                <option value="West">West</option>
+            </select>
+
+            <label for="race">Race:</label>
+            <select name="race" id="race">
+                <option value="Bamileke-Bamu">Bamileke-Bamu</option>
+                <option value="Beti/Bassa, Mbam">Beti/Bassa, Mbam</option>
+                <option value="Biu-Mandara">Biu-Mandara</option>
+                <option value="Adamawa-Ubangi">Adamawa-Ubangi</option>
+                <option value="Grassfields">Grassfields</option>
+                <option value="Kako, Meka/Pygmy">Kako, Meka/Pygmy</option>
+                <option value="Cotier/Ngoe/Oroko">Cotier/Ngoe/Oroko</option>
+            </select>
+        </form>
+        <button type="button" onclick="showStep(1)">Back</button>
+        <button type="button" onclick="showStep(3); submitDemo();">Next</button>
+    </div>
+
+  
+    <div class="registration-container" id="step3" style="display: none;">
+        <h2> Employment Data</h2>
+        <form action="javascript:void(0);" id="employment-form">
+            <label for="status">Status:</label>
+            <select name="status" id="status" required>
+                <option value="" disabled selected hidden>Click to select status</option>
+                <option value="Employed">Employed</option>
+                <option value="Unemployed">Unemployed</option>
+                <option value="Self-Employed">Self-Employed</option>
+            </select>
+
+            <label for="occupation">Occupation:</label>
+            <input type="text" id="occupation" name="occupation" required>
+
+            <label for="income-range">Income Range:</label>
+            <select id="income-range" name="income-range" required>
+                <option value="" disabled selected hidden>Click to select income range</option>
+                <option value="Below 70,000">Below 70,000 FCFA</option>
+                <option value="70,000 - $50,000">70,000 - 100,000 FCFA</option>
+                <option value="100,000 - 150,000">100,000 - 150,000 FCFA</option>
+                <option value="Above 150,000">Above 150,000 FCFA</option>
+            </select>
+        </form>
+        <button type="button" onclick="showStep(2)">Back</button>
+        <button type="button" onclick="showStep(4); submitEmployment();">Next</button>
+    </div>
+
+    <div class="registration-container" id="step4" style="display: none;">
+        <h2>Education Data</h2>
+        <form action="javascript:void(0);" id="education-form">
+            <label for="attainment">Attainment:</label>
+            <select name="attainment" id="attainment" required>
+                <option value="" disabled selected hidden>Click to select attainment</option>
+                <option value="High School">High School</option>
+                <option value="College/University">University</option>
+                <option value="Postgraduate">Postgraduate</option>
+            </select>
+
+            <label for="school-attendance">School Attendance:</label>
+            <select id="school-attendance" name="school-attendance" required>
+                <option value="" disabled selected hidden>Click to select school attendance</option>
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Not attending">Not attending</option>
+            </select>
+        </form>
+        <button type="button" onclick="showStep(3)">Back</button>
+        <button type="button" onclick="submitEducation()">Submit</button>
+    </div>
+
+    
+    <script>
+        function showStep(stepNumber) {
+            for (let i = 1; i <= 4; i++) {
+                const step = document.getElementById(`step${i}`);
+                step.style.display = i === stepNumber ? "block" : "none";
+            }
+        }
+    </script>
+
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6dyamLUbdpDKhPyocO4c8UZDeprFHnqo",
+            authDomain: "census-cam.firebaseapp.com",
+            projectId: "census-cam",
+            storageBucket: "census-cam.appspot.com",
+            messagingSenderId: "533729581158",
+            appId: "1:533729581158:web:eaba16713d8ba8574975a7"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+        let userId;
+
+        window.toggleFields = function() {
+            const childrenSelect = document.getElementById("children");
+            const childFields = document.getElementById("childFields");
+
+            if (childrenSelect.value === "yes") {
+                childFields.style.display = "block";
+            } else {
+                childFields.style.display = "none";
+            }
+        };
+
+        window.submitRegistration = async function() {
+            const fullName = document.getElementById("full-names").value;
+            const gender = document.getElementById("gender").value;
+            const dob = document.getElementById("dob").value;
+            const phoneNumber = document.getElementById("phone-number").value;
+            const childrenSelect = document.getElementById("children");
+            const above21 = childrenSelect.value === "yes" ? document.getElementById("above21").value : null;
+            const below21 = childrenSelect.value === "yes" ? document.getElementById("below21").value : null;
+            const hasChildren = childrenSelect.value === "yes";
+
+            const userData = {
+                fullName,
+                gender,
+                dob,
+                phoneNumber,
+                hasChildren,
+                above21,
+                below21,
+            };
+
+            const docRef = await addDoc(collection(firestore, 'registrations'), userData);
+            userId = docRef.id;
+            alert("Your information has been submitted successfully! Document ID: " + userId);
+        };
+
+        // Function to submit demographic data
+        window.submitDemo = async function() {
+            const nationality = document.getElementById("nationality").value;
+            const language = document.getElementById("language").value;
+            const region = document.getElementById("region").value;
+            const race = document.getElementById("race").value;
+
+            const demoData = {
+                nationality,
+                language,
+                region,
+                race,
+                userId: userId,
+            };
+
+            const docRef = await addDoc(collection(firestore, 'demos'), demoData);
+
+            alert("Demographic information has been submitted successfully! Document ID: " + docRef.id);
+        };
+
+        // Function to submit employment data
+        window.submitEmployment = async function() {
+            const status = document.getElementById("status").value;
+            const occupation = document.getElementById("occupation").value;
+            const incomeRange = document.getElementById("income-range").value;
+
+            const employmentData = {
+                status,
+                occupation,
+                incomeRange,
+                userId: userId,
+            };
+
+            const docRef = await addDoc(collection(firestore, 'employments'), employmentData);
+
+            alert("Employment information has been submitted successfully! Document ID: " + docRef.id);
+        };
+
+        // Function to submit education data
+        window.submitEducation = async function() {
+            const attainment = document.getElementById("attainment").value;
+            const schoolAttendance = document.getElementById("school-attendance").value;
+
+            const educationData = {
+                attainment,
+                schoolAttendance,
+                userId: userId,
+            };
+
+            const docRef = await addDoc(collection(firestore, 'educations'), educationData);
+
+            alert("Education information has been submitted successfully! Document ID: " + docRef.id);
+        };
+
+
     </script>
     
 </body>

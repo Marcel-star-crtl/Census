@@ -94,3 +94,483 @@
 </body>
 </html> 
 
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Admin Dashboard</title>
+</head>
+<body>
+    <div class="admin-container">
+        <h2>Admin Dashboard</h2>
+        <div>
+            <label for="regionFilter">Filter by Region:</label>
+            <select id="regionFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="North">North</option>
+                <option value="South">South</option>
+                <option value="East">East</option>
+                <option value="Littoral">Littoral</option>
+            </select>
+        </div>
+        <div>
+            <label for="genderFilter">Filter by Gender:</label>
+            <select id="genderFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+        <button type="button" onclick="downloadData()">Download Data as PDF</button>
+
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Gender</th>
+                    <th>Address</th>
+                    <th>Phone Number</th>
+                    <th>Date of Birth</th>
+                    <th>Region</th>
+                    <th>Children</th>
+                    <th>Above 21</th>
+                    <th>Below 21</th>
+                </tr>
+            </thead>
+            <tbody id="dashboardTableBody">
+                <!-- Data will be dynamically added here -->
+            </tbody>
+        </table>
+
+        <canvas id="myChart" width="400" height="400"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.debug.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // import Chart from 'https://www.jsdelivr.com/package/npm/chart.js';
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6dyamLUbdpDKhPyocO4c8UZDeprFHnqo",
+            authDomain: "census-cam.firebaseapp.com",
+            projectId: "census-cam",
+            storageBucket: "census-cam.appspot.com",
+            messagingSenderId: "533729581158",
+            appId: "1:533729581158:web:eaba16713d8ba8574975a7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to download data as PDF
+        window.downloadData = async function () {
+            const pdf = new jsPDF();
+            pdf.text('User Registration Data', 20, 10);
+
+            const registrationsRef = collection(db, 'registrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
+
+            let yOffset = 20;
+            const lineHeight = 10;
+
+            registrations.forEach(user => {
+                const userData = `Name: ${user.fullName}, Gender: ${user.gender}, Address: ${user.address}, Phone Number: ${user.phoneNumber}, Region: ${user.region}, Children: ${user.hasChildren ? 'Yes' : 'No'}`;
+                
+                // Check if there is enough space on the page for the text
+                if (yOffset + lineHeight * 2 > pdf.internal.pageSize.height) {
+                    pdf.addPage();
+                    yOffset = 20;
+                }
+
+                pdf.text(userData, 20, yOffset);
+                yOffset += lineHeight;
+            });
+
+            pdf.save('registration_data.pdf');
+        };
+
+        // Function to apply filters and update the displayed data
+        window.applyFilters = function () {
+            displayUserRegistrationData();
+        };
+
+        // Display user registration data on the admin dashboard
+        async function displayUserRegistrationData() {
+            const tableBody = document.getElementById('dashboardTableBody');
+            tableBody.innerHTML = '';
+
+            const regionFilter = document.getElementById('regionFilter').value;
+            const genderFilter = document.getElementById('genderFilter').value;
+
+            const registrationsRef = collection(db, 'registrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
+
+            registrations.forEach(user => {
+                if (
+                    (regionFilter === '' || user.region === regionFilter) &&
+                    (genderFilter === '' || user.gender === genderFilter)
+                ) {
+                    const row = `<tr>
+                        <td>${user.fullName}</td>
+                        <td>${user.gender}</td>
+                        <td>${user.address}</td>
+                        <td>${user.phoneNumber}</td>
+                        <td>${user.dob}</td>
+                        <td>${user.region}</td>
+                        <td>${user.hasChildren ? 'Yes' : 'No'}</td>
+                        <td>${user.above21 || '-'}</td>
+                        <td>${user.below21 || '-'}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                }
+            });
+
+            createBarChart(registrations);
+        }
+
+        function createBarChart(registrations) {
+            // Extract relevant data for the chart
+            const regions = [...new Set(registrations.map(user => user.region))];
+            const counts = regions.map(region =>
+                registrations.filter(user => user.region === region).length
+            );
+    
+            // Get the canvas element
+            const ctx = document.getElementById('myChart').getContext('2d');
+    
+            // Create a bar chart
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: regions,
+                    datasets: [{
+                        label: 'User Count by Region',
+                        data: counts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Customize as needed
+                        borderColor: 'rgba(75, 192, 192, 1)', // Customize as needed
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        displayUserRegistrationData();
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Admin Dashboard</title>
+</head>
+
+<body>
+    <div class="admin-container">
+        <h2>Admin Dashboard</h2>
+        <div>
+            <label for="regionFilter">Filter by Region:</label>
+            <select id="regionFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="North">North</option>
+                <option value="South">South</option>
+                <option value="East">East</option>
+                <option value="Littoral">Littoral</option>
+            </select>
+        </div>
+        <div>
+            <label for="genderFilter">Filter by Gender:</label>
+            <select id="genderFilter" onchange="applyFilters()">
+                <option value="">All</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+        <button type="button" onclick="downloadData()">Download Data as PDF</button>
+
+        <!-- Table for Personal Data -->
+        <h3>Personal Data</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Gender</th>
+                    <th>Date of Birth</th>
+                    <th>Phone Number</th>
+                    <th>Children</th>
+                    <th>Above 21</th>
+                    <th>Below 21</th>
+                </tr>
+            </thead>
+            <tbody id="personalDataTableBody">
+                <!-- Data will be dynamically added here -->
+            </tbody>
+        </table>
+
+        <!-- Table for Demographic Data -->
+        <h3>Demographic Data</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Nationality</th>
+                    <th>Language</th>
+                    <th>Region</th>
+                    <th>Race</th>
+                </tr>
+            </thead>
+            <tbody id="demographicDataTableBody">
+                <!-- Data will be dynamically added here -->
+            </tbody>
+        </table>
+
+        <!-- Table for Employment Data -->
+        <h3>Employment Data</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Occupation</th>
+                    <th>Income Range</th>
+                </tr>
+            </thead>
+            <tbody id="employmentDataTableBody">
+                <!-- Data will be dynamically added here -->
+            </tbody>
+        </table>
+
+        <!-- Table for Education Data -->
+        <h3>Education Data</h3>
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Attainment</th>
+                    <th>School Attendance</th>
+                </tr>
+            </thead>
+            <tbody id="educationDataTableBody">
+                <!-- Data will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Replace version with the latest version available -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.debug.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC6dyamLUbdpDKhPyocO4c8UZDeprFHnqo",
+            authDomain: "census-cam.firebaseapp.com",
+            projectId: "census-cam",
+            storageBucket: "census-cam.appspot.com",
+            messagingSenderId: "533729581158",
+            appId: "1:533729581158:web:eaba16713d8ba8574975a7"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Function to download data as PDF
+        window.downloadData = async function () {
+            // Download data for each form as needed
+            downloadPersonalData();
+            downloadDemographicData();
+            downloadEmploymentData();
+            downloadEducationData();
+        };
+
+        // Function to apply filters and update the displayed data
+        window.applyFilters = function () {
+            // Apply filters for each form as needed
+            displayPersonalData();
+            displayDemographicData();
+            displayEmploymentData();
+            displayEducationData();
+        };
+
+        // Display Personal Data on the admin dashboard
+        async function displayPersonalData() {
+            const tableBody = document.getElementById('personalDataTableBody');
+            tableBody.innerHTML = '';
+
+            const regionFilter = document.getElementById('regionFilter').value;
+            const genderFilter = document.getElementById('genderFilter').value;
+
+            const registrationsRef = collection(db, 'registrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
+
+            registrations.forEach(user => {
+                if (
+                    (regionFilter === '' || user.region === regionFilter) &&
+                    (genderFilter === '' || user.gender === genderFilter)
+                ) {
+                    const row = `<tr>
+                        <td>${user.fullName}</td>
+                        <td>${user.gender}</td>
+                        <td>${user.dob}</td>
+                        <td>${user.phoneNumber}</td>
+                        <td>${user.hasChildren ? 'Yes' : 'No'}</td>
+                        <td>${user.above21 || '-'}</td>
+                        <td>${user.below21 || '-'}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                }
+            });
+        }
+
+        // Download Personal Data as PDF
+        async function downloadPersonalData() {
+            // Similar to displayPersonalData, generate PDF for personal data
+            // Adjust as needed based on your requirements
+        }
+
+        // Display Demographic Data on the admin dashboard
+        async function displayDemographicData() {
+            const tableBody = document.getElementById('demographicDataTableBody');
+            tableBody.innerHTML = '';
+
+            // Retrieve demographic data from Firebase
+            const demoRef = collection(db, 'demos');
+            const demoSnapshot = await getDocs(demoRef);
+            const demographicData = demoSnapshot.docs.map(doc => doc.data());
+
+            demographicData.forEach(data => {
+                const row = `<tr>
+                    <td>${data.nationality}</td>
+                    <td>${data.language}</td>
+                    <td>${data.region}</td>
+                    <td>${data.race}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Download Demographic Data as PDF
+        async function downloadDemographicData() {
+            const pdf = new jsPDF();
+            pdf.text('Demographic Data', 20, 10);
+
+            const demoRef = collection(db, 'demos');
+            const demoSnapshot = await getDocs(demoRef);
+            const demographicData = demoSnapshot.docs.map(doc => doc.data());
+
+            demographicData.forEach(data => {
+                const rowData = `Nationality: ${data.nationality}\nLanguage: ${data.language}\nRegion: ${data.region}\nRace: ${data.race}\n\n`;
+                pdf.text(rowData, 20, pdf.lastAutoTable.finalY + 10);
+            });
+
+            pdf.save('demographic_data.pdf');
+        }
+
+        // Display Employment Data on the admin dashboard
+        async function displayEmploymentData() {
+            const tableBody = document.getElementById('employmentDataTableBody');
+            tableBody.innerHTML = '';
+
+            const employmentRef = collection(db, 'employments');
+            const employmentSnapshot = await getDocs(employmentRef);
+            const employmentData = employmentSnapshot.docs.map(doc => doc.data());
+
+            employmentData.forEach(data => {
+                const row = `<tr>
+                    <td>${data.status}</td>
+                    <td>${data.occupation}</td>
+                    <td>${data.incomeRange}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Download Employment Data as PDF
+        async function downloadEmploymentData() {
+            // Similar to displayEmploymentData, generate PDF for employment data
+            // Adjust as needed based on your requirements
+        }
+
+        // Display Education Data on the admin dashboard
+        async function displayEducationData() {
+            const tableBody = document.getElementById('educationDataTableBody');
+            tableBody.innerHTML = '';
+
+            const educationRef = collection(db, 'educations');
+            const educationSnapshot = await getDocs(educationRef);
+            const educationData = educationSnapshot.docs.map(doc => doc.data());
+
+            educationData.forEach(data => {
+                const row = `<tr>
+                    <td>${data.attainment}</td>
+                    <td>${data.schoolAttendance}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Download Education Data as PDF
+        async function downloadEducationData() {
+            // Similar to displayEducationData, generate PDF for education data
+            // Adjust as needed based on your requirements
+        }
+
+        // Initial data display
+        applyFilters();
+
+    </script>
+</body>
+
+</html>

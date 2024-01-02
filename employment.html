@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./style.css">
+    <title>Registration Page</title>
+</head>
+<body>
+    <div class="registration-container">
+        <h2> Employment Data</h2>
+        <form action="javascript:void(0);" id="registration-form">
+            <label for="status">Status:</label>
+            <select name="status" id="status" required>
+                <option value="" disabled selected hidden>Click to select status</option>
+                <option value="Employed">Employed</option>
+                <option value="Unemployed">Unemployed</option>
+                <option value="Self-Employed">Self-Employed</option>
+            </select>
+
+            <label for="occupation">Occupation:</label>
+            <input type="text" id="occupation" name="occupation" required>
+
+            <label for="income-range">Income Range:</label>
+            <select id="income-range" name="income-range" required>
+                <option value="" disabled selected hidden>Click to select income range</option>
+                <option value="Below 70,000">Below 70,000 FCFA</option>
+                <option value="70,000 - $50,000">70,000 - 100,000 FCFA</option>
+                <option value="100,000 - 150,000">100,000 - 150,000 FCFA</option>
+                <option value="Above 150,000">Above 150,000 FCFA</option>
+            </select>
+        </form>
+        <button type="button" id="button" onclick="submitRegistration()">Next</button>
+        <div class="admin-link-container">
+            <a href="dashboard.html">Are you an Admin?</a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-messaging-sender-id",
+            appId: "your-app-id"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const firestore = getFirestore(app);
+
+        window.submitRegistration = async function() {
+            const status = document.getElementById("status").value;
+            const occupation = document.getElementById("occupation").value;
+            const incomeRange = document.getElementById("income-range").value;
+
+            const userData = {
+                status,
+                occupation,
+                incomeRange,
+            };
+
+            const docRef = await addDoc(collection(firestore, 'registrations'), userData);
+
+            alert("Your information has been submitted successfully! Document ID: " + docRef.id);
+        };
+    </script>
+</body>
+</html>
