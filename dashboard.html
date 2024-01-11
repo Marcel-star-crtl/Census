@@ -53,7 +53,7 @@
         
         <div class="statistics-container">
             <h3>Demographic Data Statistics</h3>
-            <canvas id="demographicChart" width="200" height="200"></canvas>
+            <canvas id="demographicChart" width="100" height="100"></canvas>
             <div id="demographicStatistics"></div>
             <div class="statistics-details">
                 <p id="northCount">North: 0</p>
@@ -65,7 +65,7 @@
         
         <div class="statistics-container">
             <h3>Employment Statistics</h3>
-            <canvas id="employmentChart" width="200" height="200"></canvas>
+            <canvas id="employmentChart" width="40" height="40"></canvas>
             <div id="employmentStatistics"></div>
             <div class="statistics-details">
                 <p id="employedCount">Employed: 0</p>
@@ -74,7 +74,7 @@
             </div>
         </div>
         
-        <div class="statistics-container" width="200" height="200">
+        <div class="statistics-container" width="40" height="40">
             <h3>Education Statistics</h3>
             <div id="educationStatistics"></div>
             <canvas id="educationChart"></canvas>
@@ -87,15 +87,17 @@
     </div>
 
     <!-- Replace version with the latest version available -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.2/jspdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.13/jspdf.plugin.autotable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        
+        let statistics = {};
 
     
         // Your web app's Firebase configuration
@@ -111,40 +113,62 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-    
+        // Initialize jspdf at the top level
+        const jspdf = new jsPDF('p', 'pt', 'letter');
+        
         // Function to download data as PDF
         window.downloadData = async function () {
-            const { jsPDF } = window.jspdf;
-            // const pdf = new window.jspdf.jsPDF();
-
             // Add personal data to PDF
-            pdf.text('Personal Data', 10, 10);
-            pdf.autoTable({
+            jspdf.text('Personal Data', 10, 10);
+            jspdf.autoTable({
                 head: [['Full Name', 'Gender', 'Date of Birth', 'Phone Number', 'Children', 'Above 21', 'Below 21']],
                 body: tableToArray('personalDataTableBody'),
             });
 
             // Add demographic statistics to PDF
-            pdf.text('Demographic Data Statistics', 10, pdf.autoTable.previous.finalY + 10);
-            pdf.autoTable({
+            jspdf.text('Demographic Data Statistics', 10, jspdf.autoTable.previous.finalY + 10);
+            jspdf.autoTable({
                 body: [['North', 'South', 'East', 'Littoral'], [statistics['North'], statistics['South'], statistics['East'], statistics['Littoral']]],
             });
 
             // Add employment statistics to PDF
-            pdf.text('Employment Statistics', 10, pdf.autoTable.previous.finalY + 10);
-            pdf.autoTable({
+            jspdf.text('Employment Statistics', 10, jspdf.autoTable.previous.finalY + 10);
+            jspdf.autoTable({
                 body: [['Employed', 'Unemployed', 'Self-Employed'], [statistics['Employed'], statistics['Unemployed'], statistics['Self-Employed']]],
             });
 
             // Add education statistics to PDF
-            pdf.text('Education Statistics', 10, pdf.autoTable.previous.finalY + 10);
-            pdf.autoTable({
+            jspdf.text('Education Statistics', 10, jspdf.autoTable.previous.finalY + 10);
+            jspdf.autoTable({
                 body: [['High School', 'University', 'Postgraduate'], [statistics['High School'], statistics['University'], statistics['Postgraduate']]],
             });
 
+             // Capture chart images and add to PDF
+            const demographicChartImage = await captureChartImage('demographicChart');
+            const employmentChartImage = await captureChartImage('employmentChart');
+            const educationChartImage = await captureChartImage('educationChart');
+
+            jspdf.addImage(demographicChartImage, 'JPEG', 10, jspdf.autoTable.previous.finalY + 20, 150, 150);
+            jspdf.addImage(employmentChartImage, 'JPEG', 120, jspdf.autoTable.previous.finalY + 20, 150, 150);
+            jspdf.addImage(educationChartImage, 'JPEG', 230, jspdf.autoTable.previous.finalY + 20, 150, 150);
+
+
             // Save the PDF
-            pdf.save('dashboard_data.pdf');
+            jspdf.save('dashboard_data.pdf');
         };
+
+
+        // Function to capture chart as image
+        async function captureChartImage(chartId) {
+            const chart = document.getElementById(chartId);
+
+            return new Promise(resolve => {
+                html2canvas(chart).then(canvas => {
+                    resolve(canvas.toDataURL('image/jpeg', 1.0));
+                });
+            });
+        }
+
 
         // Helper function to convert table to array
         function tableToArray(tableId) {
@@ -191,11 +215,9 @@
         }
     
         // Download Personal Data as PDF
-        async function downloadPersonalData() {
+        window.downloadPersonalData = async function () {
             
         }
-    
-       // ...
 
         // Function to create a chart
         function createChart(chartId, data, labels, chartType, title) {
@@ -227,12 +249,22 @@
                         y: {
                             beginAtZero: true
                         }
-                    }
+                    },
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    },
+                    responsive: true,
+                    width: 100, 
+                    height: 100 
                 }
             });
         }
 
-        // ...
 
         // Function to display demographic statistics
         async function displayDemographicStatistics() {
@@ -278,7 +310,8 @@
             const employmentSnapshot = await getDocs(employmentRef);
             const employmentData = employmentSnapshot.docs.map(doc => doc.data());
 
-            const statistics = {
+            // Remove the 'let' keyword here
+            statistics = {
                 'Employed': 0,
                 'Unemployed': 0,
                 'Self-Employed': 0
@@ -307,15 +340,14 @@
             createChart('employmentChart', employmentChartData, employmentChartLabels, 'pie', 'Employment Statistics');
         }
 
-        // ...
-
         // Function to display education statistics
         async function displayEducationStatistics() {
             const educationRef = collection(db, 'educations');
             const educationSnapshot = await getDocs(educationRef);
             const educationData = educationSnapshot.docs.map(doc => doc.data());
 
-            const statistics = {
+            // Remove the 'let' keyword here
+            statistics = {
                 'High School': 0,
                 'University': 0,
                 'Postgraduate': 0
@@ -344,15 +376,17 @@
             createChart('educationChart', educationChartData, educationChartLabels, 'doughnut', 'Education Statistics');
         }
 
-        applyFilters();
-        displayDemographicStatistics();
-        displayEmploymentStatistics();
-        displayEducationStatistics();
-
-        // Display statistics
+        // applyFilters();
         // displayDemographicStatistics();
         // displayEmploymentStatistics();
         // displayEducationStatistics();
+
+
+        await Promise.all([
+            displayDemographicStatistics(),
+            displayEmploymentStatistics(),
+            displayEducationStatistics()
+        ]);
 
 
 

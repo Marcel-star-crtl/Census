@@ -1,114 +1,3 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./style.css">
-    <title>Registration Page</title>
-</head>
-<body>
-    <div class="registration-container">
-        <h2>Registration Page</h2>
-        <form action="" id="registration-form">
-            <label for="full-names">Full Names:</label>
-            <input type="text" id="full-names" name="full-names" required>
-            <label for="gender">Gender:</label>
-            <select id="gender" name="gender" required>
-                <option value="" disabled selected hidden>Click to select gender</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
-            <label for="full-names">Address:</label>
-            <input type="text" id="address" name="address" required>
-            <label for="phone-number">Phone Number:</label>
-            <input type="tel" id="phone-number" name="phone-number" required pattern="[0-9]{10}">
-            <label for="dob">Date of Birth (DOB):</label>
-            <input type="date" id="dob" name="dob" required>
-            <label for="region">Place Of Birth:</label>
-            <select id="region" name="region" required>
-                <option value="" disabled selected hidden>Click to select your region of birth</option>
-                <option value="Adamawa">Adamawa</option>
-                <option value="Centre">Centre</option>
-                <option value="East">East</option>
-                <option value="Far North">Far North</option>
-                <option value="Littoral">Littoral</option>
-                <option value="North">North</option>
-                <option value="Northwest">Northwest</option>
-                <option value="South">South</option>
-                <option value="Southwest">Southwest</option>
-                <option value="West">West</option>
-            </select>
-            <label for="children">Do you have children?</label>
-            <select id="children" name="children" onchange="toggleFields()">
-                <option value="" disabled selected hidden>Click to select </option>
-                <option value="yes">Yes</option>
-                <option value="no">No</option>
-            </select>
-
-            <div id="childFields" style="display: none;">
-                <label for="above21">Number of children above 21:</label>
-                <input type="number" id="above21" name="above21">
-
-                <label for="below21">Number of children below 21:</label>
-                <input type="number" id="below21" name="below21">
-            </div>
-        </form>
-        <button type="button" id="button" onclick="submitRegistration()">Submit</button>
-        <div class="admin-link-container">
-            <a href="dashboard.html">Are you an Admin?</a>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyC6dyamLUbdpDKhPyocO4c8UZDeprFHnqo",
-            authDomain: "census-cam.firebaseapp.com",
-            projectId: "census-cam",
-            storageBucket: "census-cam.appspot.com",
-            messagingSenderId: "533729581158",
-            appId: "1:533729581158:web:eaba16713d8ba8574975a7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const firestore = getFirestore(app);
-
-        window.submitRegistration = async function() {
-            const fullName = document.getElementById("full-names").value;
-            const gender = document.getElementById("gender").value;
-            const address = document.getElementById("address").value;
-            const phoneNumber = document.getElementById("phone-number").value;
-            const dob = document.getElementById("dob").value;
-            const region = document.getElementById("region").value;
-            const hasChildren = document.getElementById("children").value === "yes";
-            const above21 = hasChildren ? document.getElementById("above21").value : null;
-            const below21 = hasChildren ? document.getElementById("below21").value : null;
-
-            const userData = {
-                fullName,
-                gender,
-                address,
-                phoneNumber,
-                dob,
-                region,
-                hasChildren,
-                above21,
-                below21
-            };
-
-            const docRef = await addDoc(collection(firestore, 'registrations'), userData);
-
-            alert("Your information has been submitted successfully! Document ID: " + docRef.id);
-        };
-    </script>
-    
-</body>
-</html> -->
-
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -132,7 +21,9 @@
             <label for="dob">Date of Birth (DOB):</label>
             <input type="date" id="dob" name="dob" required>
             <label for="phone-number">Contact:</label>
-            <input type="tel" id="phone-number" name="phone-number" required pattern="[0-9]{10}">
+            <input type="tel" id="phone-number" name="phone-number" required pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number">
+            <div id="phone-error-message" class="error-message"></div>
+
             <label for="children">Do you have children?</label>
             <select id="children" name="children" onchange="toggleFields()">
                 <option value="" disabled selected hidden>Click to select </option>
@@ -288,27 +179,63 @@
         window.submitRegistration = async function() {
             const fullName = document.getElementById("full-names").value;
             const gender = document.getElementById("gender").value;
-            const dob = document.getElementById("dob").value;
-            const phoneNumber = document.getElementById("phone-number").value;
+            const dobInput = document.getElementById("dob");
+            const phoneNumberInput = document.getElementById("phone-number").value;
             const childrenSelect = document.getElementById("children");
             const above21 = childrenSelect.value === "yes" ? document.getElementById("above21").value : null;
             const below21 = childrenSelect.value === "yes" ? document.getElementById("below21").value : null;
             const hasChildren = childrenSelect.value === "yes";
 
-            const userData = {
-                fullName,
-                gender,
-                dob,
-                phoneNumber,
-                hasChildren,
-                above21,
-                below21,
-            };
+            // Validate all required fields
+            if (!fullName || !gender || !dobInput.value || !phoneNumberInput) {
+                alert("Please fill in all required fields in the personal data form.");
+                return showStep(1);
+            }
 
-            const docRef = await addDoc(collection(firestore, 'registrations'), userData);
-            userId = docRef.id;
-            alert("Your information has been submitted successfully! Document ID: " + userId);
+            // Get the date of birth value
+            const dob = new Date(dobInput.value);
+
+            // Calculate age based on the current date
+            const currentDate = new Date();
+            let age = currentDate.getFullYear() - dob.getFullYear();
+
+            // Check if the birthday hasn't occurred yet this year
+            if (currentDate.getMonth() < dob.getMonth() || (currentDate.getMonth() === dob.getMonth() && currentDate.getDate() < dob.getDate())) {
+            age--;
+            }
+
+            const phoneNumber = phoneNumberInput;
+            if (!/^\d+$/.test(phoneNumber)) {
+                document.getElementById("phone-error-message").innerText = "Please enter a valid 10-digit phone number.";
+            } else {
+                document.getElementById("phone-error-message").innerText = "";
+                return showStep(1);
+            }
+
+            // Check if the user is not more than 21 years old
+            if (age > 21) {
+                const userData = {
+                    fullName,
+                    gender,
+                    dob: dobInput.value,
+                    phoneNumber,
+                    hasChildren,
+                    above21,
+                    below21,
+                };
+
+                const docRef = await addDoc(collection(firestore, 'registrations'), userData);
+                userId = docRef.id;
+                alert("Your information has been submitted successfully! Document ID: " + userId);
+
+                // Proceed to the next step
+                showStep(2);
+            } else {
+                alert("You must be 21 years old or older to submit this form.");
+                return showStep(1);
+            }
         };
+
 
         // Function to submit demographic data
         window.submitDemo = async function() {
@@ -316,6 +243,11 @@
             const language = document.getElementById("language").value;
             const region = document.getElementById("region").value;
             const race = document.getElementById("race").value;
+
+            if (!nationality || !language || !region || !race) {
+                alert("Please fill in all required fields in the demographic data form.");
+                return showStep(2);
+            }
 
             const demoData = {
                 nationality,
@@ -336,6 +268,10 @@
             const occupation = document.getElementById("occupation").value;
             const incomeRange = document.getElementById("income-range").value;
 
+            if (!status || !occupation || !incomeRange) {
+                alert("Please fill in all required fields in the employment data form.");
+                return showStep(3);
+            }
             const employmentData = {
                 status,
                 occupation,
@@ -352,6 +288,11 @@
         window.submitEducation = async function() {
             const attainment = document.getElementById("attainment").value;
             const schoolAttendance = document.getElementById("school-attendance").value;
+
+            if (!attainment || !schoolAttendance) {
+                alert("Please fill in all required fields in the education data form.");
+                return;
+            }
 
             const educationData = {
                 attainment,
