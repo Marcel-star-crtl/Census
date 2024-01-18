@@ -113,7 +113,6 @@
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        // Initialize jspdf at the top level
         const jspdf = new jsPDF('p', 'pt', 'letter');
         
         // Function to download data as PDF
@@ -148,9 +147,9 @@
             const employmentChartImage = await captureChartImage('employmentChart');
             const educationChartImage = await captureChartImage('educationChart');
 
-            jspdf.addImage(demographicChartImage, 'JPEG', 10, jspdf.autoTable.previous.finalY + 20, 150, 150);
-            jspdf.addImage(employmentChartImage, 'JPEG', 120, jspdf.autoTable.previous.finalY + 20, 150, 150);
-            jspdf.addImage(educationChartImage, 'JPEG', 230, jspdf.autoTable.previous.finalY + 20, 150, 150);
+            jspdf.addImage(demographicChartImage, 'JPEG', 10, jspdf.autoTable.previous.finalY + 20, 100, 100);
+            jspdf.addImage(employmentChartImage, 'JPEG', 120, jspdf.autoTable.previous.finalY + 20, 100, 100);
+            jspdf.addImage(educationChartImage, 'JPEG', 230, jspdf.autoTable.previous.finalY + 20, 100, 100);
 
 
             // Save the PDF
@@ -177,13 +176,6 @@
             return rows.map(row => Array.from(row.cells).map(cell => cell.textContent));
         }
 
-        // Function to apply filters and update the displayed data
-        window.applyFilters = function () {
-            // Apply filters for each form as needed
-            displayPersonalData();
-        };
-    
-        // Display Personal Data on the admin dashboard
         async function displayPersonalData() {
             const tableBody = document.getElementById('personalDataTableBody');
             tableBody.innerHTML = '';
@@ -375,6 +367,57 @@
             const educationChartData = Object.values(statistics);
             createChart('educationChart', educationChartData, educationChartLabels, 'doughnut', 'Education Statistics');
         }
+
+        // Function to filter data by gender
+        function filterByGender(data, genderFilter) {
+            if (genderFilter === '') {
+                return data; 
+            }
+
+            return data.filter(user => user.gender === genderFilter);
+        }
+
+        // Function to display filtered data
+        async function displayFilteredData() {
+            const tableBody = document.getElementById('personalDataTableBody');
+            tableBody.innerHTML = '';
+
+            const regionFilter = document.getElementById('regionFilter').value;
+            const genderFilter = document.getElementById('genderFilter').value;
+
+            const registrationsRef = collection(db, 'registrations');
+            const registrationsSnapshot = await getDocs(registrationsRef);
+            const registrations = registrationsSnapshot.docs.map(doc => doc.data());
+
+            // Apply filters
+            const filteredRegistrations = filterByGender(registrations, genderFilter);
+
+            filteredRegistrations.forEach(user => {
+                if (
+                    (regionFilter === '' || user.region === regionFilter)
+                ) {
+                    const row = `<tr>
+                        <td>${user.fullName}</td>
+                        <td>${user.gender}</td>
+                        <td>${user.dob}</td>
+                        <td>${user.phoneNumber}</td>
+                        <td>${user.hasChildren ? 'Yes' : 'No'}</td>
+                        <td>${user.above21 || '-'}</td>
+                        <td>${user.below21 || '-'}</td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                }
+            });
+        }
+
+        // Update applyFilters to call displayFilteredData
+        window.applyFilters = function () {
+            // Apply filters for each form as needed
+            displayFilteredData();
+        };
+
+        // Call displayFilteredData initially
+        await displayFilteredData();
 
         // applyFilters();
         // displayDemographicStatistics();
