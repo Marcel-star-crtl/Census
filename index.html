@@ -83,7 +83,7 @@
             </select>
         </form>
         <button type="button" onclick="showStep(1)">Back</button>
-        <button type="button" onclick="showStep(3); submitDemo();">Next</button>
+        <button type="button" onclick="showStep(2); submitDemo();">Next</button>
     </div>
 
   
@@ -111,7 +111,7 @@
             </select>
         </form>
         <button type="button" onclick="showStep(2)">Back</button>
-        <button type="button" onclick="showStep(4); submitEmployment();">Next</button>
+        <button type="button" onclick="showStep(4); submitEmployment(); ">Next</button>
     </div>
 
     <div class="registration-container" id="step4" style="display: none;">
@@ -209,30 +209,29 @@
                 document.getElementById("phone-error-message").innerText = "Please enter a valid 10-digit phone number.";
             } else {
                 document.getElementById("phone-error-message").innerText = "";
-                return showStep(1);
-            }
 
-            // Check if the user is not more than 21 years old
-            if (age > 21) {
-                const userData = {
-                    fullName,
-                    gender,
-                    dob: dobInput.value,
-                    phoneNumber,
-                    hasChildren,
-                    above21,
-                    below21,
-                };
+                // Check if the user is not more than 21 years old
+                if (age > 21) {
+                    const userData = {
+                        fullName,
+                        gender,
+                        dob: dobInput.value,
+                        phoneNumber,
+                        hasChildren,
+                        above21,
+                        below21,
+                    };
 
-                const docRef = await addDoc(collection(firestore, 'registrations'), userData);
-                userId = docRef.id;
-                alert("Your information has been submitted successfully! Document ID: " + userId);
+                    const docRef = await addDoc(collection(firestore, 'registrations'), userData);
+                    userId = docRef.id;
+                    alert("Your information has been submitted successfully! Document ID: " + userId);
 
-                // Proceed to the next step
-                showStep(2);
-            } else {
-                alert("You must be 21 years old or older to submit this form.");
-                return showStep(1);
+                    // Proceed to the next step
+                    showStep(2);
+                } else {
+                    alert("You must be 21 years old or older to submit this form.");
+                    showStep(1); // Show the first step if age requirement is not met
+                }
             }
         };
 
